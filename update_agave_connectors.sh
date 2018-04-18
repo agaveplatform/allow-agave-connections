@@ -7,17 +7,21 @@ AGAVE_SERVER_FEED='http://agaveapi.co/server-feed/'
 # Location of the cache directory for the agave ip addresses
 AGAVE_IP_CACHE_DIR=agave
 
-# Uncomment to force the script to run
-#FORCE_UPDATE=1
+# Set to 1 to force the script to run
+FORCE_UPDATE=${FORCE_UPDATE:-0}
 
-# Uncomment to enabled debug output
-#FORCE_DEBUG=1
+# Set to 1 to enabled debug output
+FORCE_DEBUG=${FORCE_DEBUG:-0}
 
-# Uncomment to print actual iptable rules
-#FORCE_TRACE=1
+# Set to 1 to print actual iptable rules
+FORCE_TRACE=${FORCE_TRACE:-0}
 
-# Uncomment to print the list of ip addresses and exist
-#FETCH_ONLY=1
+# Set to 1 to print the list of ip addresses and exit
+FETCH_ONLY=${FETCH_ONLY:-0}
+
+# Set to 1 to make a dry run, skipping commands
+DRY_RUN=${DRY_RUN:-0}
+
 
 
 ######################################################
@@ -83,7 +87,7 @@ if [ ! -f $AGAVE_IP_CACHE_DIR/agave_ips.0 ]; then
 		(($FORCE_DEBUG)) && echo "Allowing access to $j on ${PROTOCOL_PORTS[@]}"
 		for p in "${PROTOCOL_PORTS[@]}"; do
 			(($FORCE_TRACE)) && echo "iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT"
-			iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT
+			!((DRY_RUN)) && iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT
 		done
 	done
 else
@@ -98,7 +102,7 @@ else
 				(($FORCE_DEBUG)) && echo "Revoking access to $i on ${PROTOCOL_PORTS[@]}"
 				for p in "${PROTOCOL_PORTS[@]}"; do
 					(($FORCE_TRACE)) && echo "iptables -A INPUT -p tcp -s $i -m tcp --dport $p -j DROP"
-					iptables -A INPUT -p tcp -s $i -m tcp --dport $p -j DROP
+					!((DRY_RUN)) && iptables -A INPUT -p tcp -s $i -m tcp --dport $p -j DROP
 				done
 			done
 		fi
@@ -112,13 +116,13 @@ else
 				(($FORCE_DEBUG)) && echo "Allowing access to $j on ${PROTOCOL_PORTS[@]}"
 				for p in "${PROTOCOL_PORTS[@]}"; do
 					(($FORCE_TRACE)) && echo "iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT"
-					iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT
+					!((DRY_RUN)) && iptables -A INPUT -p tcp -s $j -m tcp --dport $p -j ACCEPT
 				done
 			done
 
 			(($FORCE_DEBUG)) && echo "Allowing outbound traffics to established connectionsfrom Agave hosts"
 			(($FORCE_TRACE)) && echo "iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT"
-			iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+			!((DRY_RUN)) && iptables -I INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 		fi
 	fi
 fi
